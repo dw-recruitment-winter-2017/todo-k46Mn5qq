@@ -9,6 +9,7 @@
                  [compojure "1.5.1"]
                  [lein-doo "0.1.7"]
                  [hiccup "1.0.5"]
+                 [markdown-clj "0.9.98"]
                  [reagent "0.6.0"]
                  [reagent-utils "0.2.0"]
                  [ring "1.5.0"]

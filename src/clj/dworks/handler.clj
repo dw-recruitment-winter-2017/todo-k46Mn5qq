@@ -2,8 +2,12 @@
   (:require [compojure.core :refer [GET POST DELETE defroutes context]]
             [compojure.route :refer [not-found resources]]
             [config.core :refer [env]]
+            [dworks.http :refer [body->string body->map]]
             [dworks.middleware :refer [wrap-middleware]]
+            [dworks.store :as store]
             [hiccup.page :refer [include-js include-css html5]]))
+
+(def todo-defaults {:completed? false})
 
 (def mount-target
   [:div#app
@@ -28,10 +32,11 @@
 
 (def api-context
   (context "/api" request
-     (GET "/todos" [] {:status 200 :body "todos/"})
-     (GET "/todo/:todo" [todo] {:status 200 :body (str "get todo:" todo)})
-     (DELETE "/todo/:todo" [todo] {:status 200 :body (str "delete! todo:" todo)})
-     (POST "/todo/:todo" [todo] {:status 200 :body (str "upsert! todo:" todo)})))
+     (GET "/todos" [] (body->string (store/retrieve-all)))
+     (GET "/todo/:id" [id] (body->string (store/retrieve id)))
+     (POST "/todo" [] (body->string (store/upsert! (body->map request) nil todo-defaults)))
+     (POST "/todo/:id" [id] (body->string (store/upsert! (body->map request) id todo-defaults)))
+     (DELETE "/todo/:id" [id] (body->string (store/delete! id)))))
 
 (defroutes routes
   (GET "/" [] (loading-page))
