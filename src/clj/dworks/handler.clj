@@ -2,9 +2,9 @@
   (:require [compojure.core :refer [GET POST DELETE defroutes context]]
             [compojure.route :refer [not-found resources]]
             [config.core :refer [env]]
-            [dworks.http :refer [body->string body->map]]
             [dworks.middleware :refer [wrap-middleware]]
-            [dworks.store :as store]
+            [dworks.persist.store :as store]
+            [dworks.util.http :refer [body->string body->map]]
             [hiccup.page :refer [include-js include-css html5]]))
 
 (def todo-defaults {:completed? false})

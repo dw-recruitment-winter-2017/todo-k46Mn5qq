@@ -1,4 +1,4 @@
-(ns dworks.status)
+(ns dworks.util.status)
 
 ;; 1xx Informational
 (def continue 100)

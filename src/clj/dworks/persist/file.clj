@@ -1,13 +1,10 @@
-(ns dworks.store
+(ns dworks.persist.file
   (:require [clojure.java.io :as io]
             [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
-            [dworks.http :as http])
+            [dworks.util.http :as http]
+            [dworks.util.text :as text])
   (:import [java.util UUID]))
-
-(defn uuid
-  []
-  (str (UUID/randomUUID)))
 
 (def default-store-folder "store/todo/")
 
@@ -18,7 +15,7 @@
   (when (and sf (string? sf))
     (reset! store-folder sf)))
 
-(defn filename
+(defn- filename
   [id]
   (str @store-folder id))
 
@@ -39,7 +36,7 @@
   [d & [i defaults]]
   (try
     (if (and d (map? d))
-      (let [id (or (get d :id) i (uuid))
+      (let [id (or (get d :id) i (text/uuid))
             fn (filename id)
             nd (merge {:id id} defaults d)]
         (io/make-parents (io/file fn))

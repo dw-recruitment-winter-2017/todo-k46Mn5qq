@@ -1,6 +1,6 @@
-(ns dworks.http
+(ns dworks.util.http
   (:require [clojure.walk :as walk]
-            [dworks.status :as status]))
+            [dworks.util.status :as status]))
 
 (defn response
   ([body] (response status/ok body))
