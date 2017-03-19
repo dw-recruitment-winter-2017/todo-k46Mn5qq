@@ -51,9 +51,16 @@
 
 (defn initialize-todos!
   []
-  ;; todo : sync ajax call to GET /api/todos
-  ;; todo : update state
-  )
+  (go (let [response (<! (http/get "api/todos"))
+            status (:status response)
+            b (:body response)
+            r (transit/reader :json)
+            body (transit/read r b)]
+        (if (= status 200)
+          (swap! state assoc :todo body)
+          (do
+            (printc "Bad initialize todos...")
+            (printc (str "status: " status "; body: " body)))))))
 
 (defn toggle-todo!
   [id]
@@ -84,7 +91,6 @@
 
 (defn delete-todo!
   [id]
-  (printc (str "delete-todo!: " id))
   (when-let [t (get-in @state [:todo id])]
     (go (let [response (<! (http/delete (str "api/todo/" id)))
               status (:status response)
@@ -92,10 +98,7 @@
               r (transit/reader :json)
               body (transit/read r b)]
           (if (= status 200)
-            (do
-              (printc (str "swapping state.  good store"))
-              (swap! state dissoc-in [:todo id])
-              (printc (str "state: " @state)))
+            (swap! state dissoc-in [:todo id])
             (do
               (printc "Bad delete...")
               (printc (str "status: " status "; body: " body))))))))
@@ -114,16 +117,20 @@
            :class (str (when (:completed? t) "completed"))}
     (:description t)]
    [:span {:on-click #(delete-todo! (:id t))}
+    " "
     [:img {:src "images/delete.png"}]]])
 
 (defn new-todo []
   (let [val (atom "")]
     (fn []
       [:div
-       [:input {:type "text"
+       [:input {:name "todod"
+                :type "text"
                 :placeholder "Enter todo item here."
                 :value @val
+                :size 80
                 :on-change #(reset! val (-> % .-target .-value))}]
+       [:br]
        [:button {:on-click #(when-let [t (generate-todo @val)]
                               (add-todo! t)
                               (reset! val ""))}

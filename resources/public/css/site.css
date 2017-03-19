@@ -33,6 +33,16 @@ a:hover {
   text-decoration: underline;
 }
 
+ul {
+    list-style-type: square;
+    padding: 0;
+}
+
+li {
+    cursor: pointer;
+}
+
 .completed {
     text-decoration: line-through;
+    color: gray;
 }
