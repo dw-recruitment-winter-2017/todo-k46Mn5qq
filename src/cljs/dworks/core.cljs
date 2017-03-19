@@ -15,13 +15,13 @@
   "Dissociates an entry from a nested associative structure returning a new
   nested structure. keys is a sequence of keys. Any empty maps that result
   will not be present in the new structure.
-  Stolen directly from a stackoverflow answer."
+  Stolen directly from a stackoverflow answer to save some time."
   [m [k & ks :as keys]]
   (if ks
-    (if-let [nextmap (get m k)]
-      (let [newmap (dissoc-in nextmap ks)]
-        (if (seq newmap)
-          (assoc m k newmap)
+    (if-let [next-map (get m k)]
+      (let [new-map (dissoc-in next-map ks)]
+        (if (seq new-map)
+          (assoc m k new-map)
           (dissoc m k)))
       m)
     (dissoc m k)))
@@ -33,23 +33,24 @@
 ;; -------------------------
 ;; State
 
-(def id-sequence (atom 10))
+; (def id-sequence (atom 10))
 
-(def test-state {:todo {"1" {:id "1" :description "Do something #1" :completed? false}
-                        "2" {:id "2" :description "Do something else #2" :completed? true}
-                        "3" {:id "3" :description "Do something different #33" :completed? false}}})
+;(def test-state {:todo {"1" {:id "1" :description "Do something #1" :completed? false}
+;                        "2" {:id "2" :description "Do something else #2" :completed? true}
+;                        "3" {:id "3" :description "Do something different #33" :completed? false}}})
 
-(def state (atom test-state))
+(def state (atom {}))
 
 ;; --------------------------
 ;; Logic
 
-(defn next-id
-  []
-  (let [id @id-sequence]
-    (swap! id-sequence inc)))
+;(defn next-id
+;  []
+;  (let [id @id-sequence]
+;    (swap! id-sequence inc)))
 
 (defn initialize-todos!
+  "Updates todo items state from server."
   []
   (go (let [response (<! (http/get "api/todos"))
             status (:status response)
@@ -63,20 +64,22 @@
             (printc (str "status: " status "; body: " body)))))))
 
 (defn toggle-todo!
+  "Toggles the completed? of the todo item."
   [id]
-  (when-let [t (get-in @state [:todo id])]
+  (when-let [t (get-in @state [:todo (keyword id)])]
     (go (let [response (<! (http/post "api/todo" {:edn-params (update t :completed? not)}))
               status (:status response)
               b (:body response)
               r (transit/reader :json)
               body (transit/read r b)]
           (if (= status 200)
-            (swap! state assoc-in [:todo (get body :id)] body)
+            (swap! state assoc-in [:todo (keyword (get body :id))] body)
             (do
               (printc "Bad toggle...")
               (printc (str "status: " status "; body: " body))))))))
 
 (defn add-todo!
+  "Adds a todo item to list."
   [t]
   (go (let [response (<! (http/post "api/todo" {:edn-params t}))
             status (:status response)
@@ -84,12 +87,13 @@
             r (transit/reader :json)
             body (transit/read r b)]
         (if (= status 200)
-          (swap! state assoc-in [:todo (get body :id)] body)
+          (swap! state assoc-in [:todo (keyword (get body :id))] body)
           (do
             (printc "Bad store...")
             (printc (str "status: " status "; body: " body)))))))
 
 (defn delete-todo!
+  "Deletes a todo item from list."
   [id]
   (when-let [t (get-in @state [:todo id])]
     (go (let [response (<! (http/delete (str "api/todo/" id)))
@@ -98,12 +102,13 @@
               r (transit/reader :json)
               body (transit/read r b)]
           (if (= status 200)
-            (swap! state dissoc-in [:todo id])
+            (swap! state dissoc-in [:todo (keyword id)])
             (do
               (printc "Bad delete...")
               (printc (str "status: " status "; body: " body))))))))
 
 (defn generate-todo
+  "Generates a todo item map given a description."
   [d]
   {:description d})
 
@@ -111,6 +116,7 @@
 ;; Views
 
 (defn todo
+  "Generates HTML list item for given todo item t."
   [t]
   [:li
    [:span {:on-click #(toggle-todo! (:id t))
@@ -120,7 +126,9 @@
     " "
     [:img {:src "images/delete.png"}]]])
 
-(defn new-todo []
+(defn new-todo
+  "Generates HTML text input and add button for new todo items."
+  []
   (let [val (atom "")]
     (fn []
       [:div
@@ -136,12 +144,14 @@
                               (reset! val ""))}
         "Add Todo Item"]])))
 
-(defn todo-list-page []
+(defn todo-list-page
+  "Generates the todo list page."
+  []
   [:div
    [:h1 "Todo list"]
    [:ul
     (for [t (sort-by #(str (:completed? %) (:description %)) (vals (:todo @state)))]
-      [todo t])]
+      ^{:key (get t :id)} [todo t])]
    [new-todo]])
 
 ;; template views
@@ -172,10 +182,14 @@
 ;; -------------------------
 ;; Initialize app
 
-(defn mount-root []
+(defn mount-root
+  "Mounts and renders the current page in the session."
+  []
   (reagent/render [current-page] (.getElementById js/document "app")))
 
-(defn init! []
+(defn init!
+  "Initializes the todo list page."
+  []
   (accountant/configure-navigation! {:nav-handler (fn [path] (secretary/dispatch! path))
                                      :path-exists? (fn [path] (secretary/locate-route path))})
   (accountant/dispatch-current!)

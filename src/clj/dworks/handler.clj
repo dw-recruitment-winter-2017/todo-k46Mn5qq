@@ -18,14 +18,16 @@
        [:b "lein figwheel"]
        " in order to start the compiler"]])
 
-(defn head []
+(defn head
+  []
   [:head
    [:meta {:charset "utf-8"}]
    [:meta {:name "viewport"
            :content "width=device-width, initial-scale=1"}]
    (include-css (if (env :dev) "/css/site.css" "/css/site.min.css"))])
 
-(defn loading-page []
+(defn loading-page
+  []
   (html5
     (head)
     [:body {:class "body-container"}
