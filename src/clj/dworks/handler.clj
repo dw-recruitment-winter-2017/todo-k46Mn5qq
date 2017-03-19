@@ -1,11 +1,13 @@
 (ns dworks.handler
-  (:require [compojure.core :refer [GET POST DELETE defroutes context]]
+  (:require [cognitect.transit :as transit]
+            [compojure.core :refer [GET POST DELETE defroutes context]]
             [compojure.route :refer [not-found resources]]
             [config.core :refer [env]]
             [dworks.middleware :refer [wrap-middleware]]
             [dworks.persist.store :as store]
-            [dworks.util.http :refer [body->string body->map]]
-            [hiccup.page :refer [include-js include-css html5]]))
+            [dworks.util.http :refer [body->string body->map body->transit]]
+            [hiccup.page :refer [include-js include-css html5]])
+  (import [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
 (def todo-defaults {:completed? false})
 
@@ -32,11 +34,11 @@
 
 (def api-context
   (context "/api" request
-     (GET "/todos" [] (body->string (store/retrieve-all)))
-     (GET "/todo/:id" [id] (body->string (store/retrieve id)))
-     (POST "/todo" [] (body->string (store/upsert! (body->map request) nil todo-defaults)))
-     (POST "/todo/:id" [id] (body->string (store/upsert! (body->map request) id todo-defaults)))
-     (DELETE "/todo/:id" [id] (body->string (store/delete! id)))))
+     (GET "/todos" [] (body->transit (store/retrieve-all)))
+     (GET "/todo/:id" [id] (body->transit (store/retrieve id)))
+     (POST "/todo" [] (body->transit (store/upsert! (body->map request) nil todo-defaults)))
+     (POST "/todo/:id" [id] (body->transit (store/upsert! (body->map request) id todo-defaults)))
+     (DELETE "/todo/:id" [id] (body->transit (store/delete! id)))))
 
 (defroutes routes
   (GET "/" [] (loading-page))

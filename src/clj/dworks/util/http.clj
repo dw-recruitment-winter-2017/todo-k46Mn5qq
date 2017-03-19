@@ -1,6 +1,8 @@
 (ns dworks.util.http
   (:require [clojure.walk :as walk]
-            [dworks.util.status :as status]))
+            [cognitect.transit :as transit]
+            [dworks.util.status :as status])
+  (import [java.io ByteArrayInputStream ByteArrayOutputStream]))
 
 (defn response
   ([body] (response status/ok body))
@@ -53,3 +55,12 @@
   (if-let [b (get r :body)]
     (update r :body str)
     r))
+
+(defn body->transit
+  [r]
+  (let [out (ByteArrayOutputStream. 4096)
+        writer (transit/writer out :json)
+        b (get r :body)]
+    (transit/write writer b)
+    (assoc r :body (.toString out))))
+

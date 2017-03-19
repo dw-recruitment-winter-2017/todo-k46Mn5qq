@@ -53,9 +53,9 @@
       (let [fn (filename id)
             f (io/file fn)]
         (if (.exists f)
-          (do
+          (let [sf (slurp f)]
             (io/delete-file f)
-            (http/ok (slurp f)))
+            (http/ok (read-string sf)))
           (http/not-found fn)))
       (http/bad-request "No id provided."))
     (catch Exception e
