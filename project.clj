@@ -1,4 +1,4 @@
-(defproject dworks "0.1.0-SNAPSHOT"
+(defproject dworks "0.1.1-SNAPSHOT"
   :description "Democracy Works : todo exercise"
   :url "http://example.com/anonymous"
   :license {:name "Eclipse Public License"

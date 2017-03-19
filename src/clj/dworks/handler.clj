@@ -1,15 +1,17 @@
 (ns dworks.handler
-  (:require [cognitect.transit :as transit]
+  (:require [clojure.java.io :as io]
             [compojure.core :refer [GET POST DELETE defroutes context]]
             [compojure.route :refer [not-found resources]]
             [config.core :refer [env]]
             [dworks.middleware :refer [wrap-middleware]]
             [dworks.persist.store :as store]
-            [dworks.util.http :refer [body->string body->map body->transit]]
-            [hiccup.page :refer [include-js include-css html5]])
-  (import [java.io ByteArrayInputStream ByteArrayOutputStream]))
+            [dworks.util.http :refer [ok body->string body->map body->transit]]
+            [hiccup.page :refer [include-js include-css html5]]
+            [markdown.core :as md]))
 
 (def todo-defaults {:completed? false})
+
+(def about-page (atom nil))
 
 (def mount-target
   [:div#app
@@ -17,6 +19,23 @@
       [:p "please run "
        [:b "lein figwheel"]
        " in order to start the compiler"]])
+
+(defn populate-about-page!
+  "Populates the about page from the about.md private resource file about.md."
+  []
+  (try
+    (let [amd (slurp (io/resource "private/about.md"))]
+      (reset! about-page (html5 [:body (md/md-to-html-string amd)])))
+    (catch Exception e
+      (reset! about-page (html5 [:body
+                                 [:h1 (str "Unable to populate about page.")]
+                                 (str e)])))))
+
+(defn handle-about-page
+  "Handles the HTTP GET request for /about."
+  []
+  (ok (or @about-page (populate-about-page!))
+      {"Content-Type" "text/html"}))
 
 (defn head
   []
@@ -44,7 +63,7 @@
 
 (defroutes routes
   (GET "/" [] (loading-page))
-  (GET "/about" [] (loading-page))
+  (GET "/about" [] (handle-about-page))
   api-context
   (resources "/")
   (not-found "Not Found"))
